@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>LuMe Studios — CRM</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+:root {
+  --bg:#000;--surface:#0a0a0a;--surface2:#111;--surface3:#181818;
+  --border:#1f1f1f;--border2:#2a2a2a;
+  --accent:#7c3aed;--accent2:#9333ea;--accent3:#a855f7;--accentglow:rgba(124,58,237,0.18);
+  --text:#fff;--muted:#555;--muted2:#333;
+  --green:#16a34a;--yellow:#ca8a04;--red:#dc2626;--orange:#ea580c;--blue:#2563eb;
+  --green2:#4ade80;--yellow2:#fbbf24;--red2:#f87171;--orange2:#fb923c;--blue2:#60a5fa;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;}
+
+/* ── Sidebar ── */
+.sidebar{width:220px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.sidebar-logo{padding:1.5rem 1.25rem 1.25rem;border-bottom:1px solid var(--border);}
+.logo-text{font-size:1.1rem;font-weight:800;letter-spacing:-0.5px;color:#fff;}
+.logo-text span{color:var(--accent3);}
+.logo-sub{font-size:0.6rem;color:var(--muted);font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-top:3px;}
+.nav{padding:0.6rem 0;flex:1;}
+.nav-section{padding:1rem 1.25rem 0.3rem;font-size:0.58rem;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:1.5px;}
+.nav-item{display:flex;align-items:center;gap:0.65rem;padding:0.55rem 1.25rem;font-size:0.82rem;font-weight:500;color:var(--muted);cursor:pointer;transition:all 0.1s;border-left:1.5px solid transparent;letter-spacing:0.1px;}
+.nav-item:hover{color:#ccc;background:var(--surface2);}
+.nav-item.active{color:#fff;background:var(--surface2);border-left-color:var(--accent3);}
+.nav-icon{font-size:0.85rem;width:16px;text-align:center;opacity:0.8;}
+.sidebar-footer{padding:0.85rem 1.25rem;border-top:1px solid var(--border);font-size:0.68rem;color:var(--muted2);}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--muted2);display:inline-block;margin-right:6px;vertical-align:middle;}
+.sync-dot.connected{background:var(--green2);}
+
+/* ── Main ── */
+.main{flex:1;overflow-x:hidden;min-width:0;}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 1.75rem;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:0.85rem;font-weight:700;letter-spacing:0.2px;color:#ccc;}
+.topbar-right{display:flex;align-items:center;gap:0.5rem;}
+.btn{display:inline-flex;align-items:center;gap:0.3rem;padding:0.42rem 0.85rem;border-radius:5px;font-size:0.78rem;font-weight:600;cursor:pointer;border:none;transition:all 0.12s;white-space:nowrap;letter-spacing:0.1px;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:var(--accent2);}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border2);}
+.btn-ghost:hover{color:#ccc;border-color:#3a3a3a;}
+.btn-sm{padding:0.28rem 0.6rem;font-size:0.72rem;}
+.btn-danger{background:transparent;color:var(--red2);border:1px solid rgba(220,38,38,0.2);}
+.btn-danger:hover{background:rgba(220,38,38,0.08);}
+.btn-icon{padding:0.28rem 0.45rem;font-size:0.75rem;}
+
+/* ── Pages ── */
+.page{padding:1.75rem;display:none;}
+.page.active{display:block;}
+
+/* ── Stats Grid ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:0.75rem;margin-bottom:1.75rem;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1rem 1.2rem;position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;opacity:0.5;}
+.stat-card.purple::before{background:linear-gradient(90deg,transparent,var(--accent3),transparent);}
+.stat-card.green::before{background:linear-gradient(90deg,transparent,var(--green2),transparent);}
+.stat-card.yellow::before{background:linear-gradient(90deg,transparent,var(--yellow2),transparent);}
+.stat-card.orange::before{background:linear-gradient(90deg,transparent,var(--orange2),transparent);}
+.stat-card.blue::before{background:linear-gradient(90deg,transparent,var(--blue2),transparent);}
+.stat-label{font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:0.5rem;}
+.stat-value{font-size:1.6rem;font-weight:800;line-height:1;letter-spacing:-0.5px;}
+.stat-card.purple .stat-value{color:var(--accent3);}
+.stat-card.green .stat-value{color:var(--green2);}
+.stat-card.yellow .stat-value{color:var(--yellow2);}
+.stat-card.orange .stat-value{color:var(--orange2);}
+.stat-card.blue .stat-value{color:var(--blue2);}
+.stat-sub{font-size:0.68rem;color:var(--muted);margin-top:0.4rem;}
+
+/* ── Section ── */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.85rem;}
+.section-title{font-size:0.82rem;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.8px;}
+.section-actions{display:flex;gap:0.45rem;align-items:center;flex-wrap:wrap;}
+.filter-input{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:0.35rem 0.75rem;color:#ccc;font-size:0.78rem;outline:none;width:180px;transition:border-color 0.1s;}
+.filter-input:focus{border-color:var(--accent);}
+.filter-input::placeholder{color:var(--muted2);}
+
+/* ── Table ── */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:auto;}
+table{width:100%;border-collapse:collapse;min-width:600px;}
+thead tr{background:var(--surface2);border-bottom:1px solid var(--border);}
+th{padding:0.65rem 1rem;text-align:left;font-size:0.62rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
+tbody tr{border-bottom:1px solid var(--border);transition:background 0.08s;cursor:pointer;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:var(--surface2);}
+td{padding:0.7rem 1rem;font-size:0.8rem;vertical-align:middle;}
+.td-name{font-weight:600;color:#fff;}
+.td-sub{color:var(--muted);font-size:0.72rem;margin-top:1px;}
+.td-amt{font-weight:700;font-variant-numeric:tabular-nums;}
+.green{color:var(--green2);}
+.yellow{color:var(--yellow2);}
+.red{color:var(--red2);}
+.accent{color:var(--accent3);}
+
+/* ── Badge ── */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:3px;font-size:0.62rem;font-weight:700;white-space:nowrap;letter-spacing:0.4px;text-transform:uppercase;}
+.badge-lead{background:rgba(168,85,247,0.12);color:var(--accent3);border:1px solid rgba(168,85,247,0.2);}
+.badge-negotiation{background:rgba(251,191,36,0.1);color:var(--yellow2);border:1px solid rgba(251,191,36,0.2);}
+.badge-active{background:rgba(74,222,128,0.1);color:var(--green2);border:1px solid rgba(74,222,128,0.2);}
+.badge-completed{background:rgba(148,163,184,0.1);color:#94a3b8;border:1px solid rgba(148,163,184,0.2);}
+.badge-cancelled{background:rgba(248,113,113,0.1);color:var(--red2);border:1px solid rgba(248,113,113,0.2);}
+
+/* ── Modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);backdrop-filter:blur(8px);z-index:200;display:none;align-items:center;justify-content:center;padding:1rem;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:8px;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;padding:1.75rem;box-shadow:0 40px 80px rgba(0,0,0,0.9);}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.4rem;}
+.modal-title{font-size:0.95rem;font-weight:800;letter-spacing:-0.2px;}
+.x-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:0.82rem;display:flex;align-items:center;justify-content:center;}
+.x-btn:hover{color:#ccc;border-color:var(--border2);}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;}
+.form-group{display:flex;flex-direction:column;gap:0.32rem;}
+.form-group.full{grid-column:1/-1;}
+.form-label{font-size:0.62rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;}
+.form-input,.form-select,.form-textarea{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:0.58rem 0.82rem;color:#fff;font-size:0.83rem;outline:none;transition:border-color 0.12s;width:100%;font-family:inherit;}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent);}
+.form-input::placeholder,.form-textarea::placeholder{color:var(--muted2);}
+.form-select option{background:var(--surface2);}
+.form-textarea{resize:vertical;min-height:72px;}
+.form-divider{grid-column:1/-1;font-size:0.6rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;padding-top:0.5rem;border-top:1px solid var(--border);margin-top:0.2rem;}
+.com-preview{background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.18);border-radius:4px;padding:0.35rem 0.65rem;font-size:0.73rem;color:var(--accent3);margin-top:0.2rem;display:none;}
+.modal-footer{display:flex;gap:0.6rem;justify-content:flex-end;margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);}
+
+/* ── Drawer ── */
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:200;display:none;}
+.drawer-overlay.open{display:block;}
+.drawer{position:fixed;top:0;right:-500px;width:460px;height:100vh;background:var(--surface);border-left:1px solid var(--border2);z-index:201;overflow-y:auto;transition:right 0.25s cubic-bezier(.4,0,.2,1);padding:1.75rem;}
+.drawer.open{right:0;}
+.drawer-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.5rem;}
+.drawer-name{font-size:1.1rem;font-weight:800;letter-spacing:-0.3px;}
+.drawer-meta{font-size:0.75rem;color:var(--muted);margin-top:5px;display:flex;align-items:center;gap:0.5rem;}
+.dsec{margin-bottom:1.4rem;}
+.dsec-title{font-size:0.6rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:0.65rem;padding-bottom:0.4rem;border-bottom:1px solid var(--border);}
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:0.55rem;}
+.di{background:var(--surface2);border-radius:5px;padding:0.65rem 0.75rem;border:1px solid var(--border);}
+.di.full{grid-column:1/-1;}
+.di-label{font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;font-weight:600;margin-bottom:3px;}
+.di-val{font-size:0.85rem;font-weight:600;}
+.progress-wrap{background:var(--surface3);border-radius:2px;height:3px;overflow:hidden;margin-top:0.5rem;}
+.progress-bar{height:100%;border-radius:2px;background:var(--accent3);}
+.d-notes{background:var(--surface2);border-radius:5px;padding:0.85rem;font-size:0.8rem;color:#777;line-height:1.7;white-space:pre-wrap;border:1px solid var(--border);}
+.drawer-actions{display:flex;gap:0.6rem;margin-top:1.5rem;padding-top:1.15rem;border-top:1px solid var(--border);}
+
+/* ── Kanban ── */
+.kanban{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:0.75rem;}
+.kcol{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.kcol-head{padding:0.7rem 0.9rem;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);}
+.kcol-title{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;}
+.kcol-count{background:var(--surface3);border-radius:3px;padding:1px 7px;font-size:0.62rem;color:var(--muted);}
+.kcards{padding:0.6rem;display:flex;flex-direction:column;gap:0.5rem;min-height:80px;}
+.kcard{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:0.75rem;cursor:pointer;transition:all 0.12s;}
+.kcard:hover{border-color:var(--accent);background:var(--surface3);}
+.kcard-name{font-size:0.8rem;font-weight:700;margin-bottom:2px;}
+.kcard-sub{font-size:0.7rem;color:var(--muted);}
+.kcard-foot{display:flex;align-items:center;justify-content:space-between;margin-top:0.5rem;}
+.kcard-amt{font-size:0.75rem;font-weight:700;color:var(--accent3);}
+
+/* ── Stats / Charts ── */
+.period-tabs{display:flex;gap:0;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:3px;width:fit-content;margin-bottom:1.5rem;}
+.period-tab{padding:0.3rem 1rem;border-radius:3px;font-size:0.75rem;font-weight:600;cursor:pointer;color:var(--muted);transition:all 0.12s;border:none;background:transparent;letter-spacing:0.2px;}
+.period-tab.active{background:var(--accent);color:#fff;}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.2rem;margin-bottom:1.25rem;}
+.chart-title{font-size:0.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem;}
+.chart-wrap{position:relative;height:220px;}
+.person-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:0.75rem;margin-bottom:1.25rem;}
+.person-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1rem 1.1rem;}
+.person-name{font-size:0.85rem;font-weight:800;margin-bottom:0.6rem;letter-spacing:-0.2px;}
+.person-stat{display:flex;justify-content:space-between;font-size:0.75rem;padding:0.28rem 0;border-bottom:1px solid var(--border);}
+.person-stat:last-child{border-bottom:none;}
+.person-stat-label{color:var(--muted);}
+.person-stat-val{font-weight:700;}
+
+/* ── Settings ── */
+.settings-section{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.4rem;margin-bottom:1rem;}
+.settings-title{font-size:0.82rem;font-weight:700;margin-bottom:0.25rem;color:#ccc;}
+.settings-desc{font-size:0.75rem;color:var(--muted);margin-bottom:1rem;line-height:1.6;}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;}
+.code-block{background:#000;border:1px solid var(--border);border-radius:5px;padding:0.9rem;font-family:'Courier New',monospace;font-size:0.72rem;color:#888;line-height:1.8;overflow-x:auto;white-space:pre;margin-top:0.75rem;}
+.status-chip{display:inline-flex;align-items:center;gap:0.35rem;padding:2px 9px;border-radius:3px;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;}
+.status-chip.ok{background:rgba(74,222,128,0.08);color:var(--green2);border:1px solid rgba(74,222,128,0.15);}
+.status-chip.off{background:rgba(85,85,85,0.15);color:var(--muted);border:1px solid var(--border);}
+.status-chip.err{background:rgba(248,113,113,0.08);color:var(--red2);border:1px solid rgba(248,113,113,0.15);}
+
+/* ── Password Modal ── */
+.pin-modal{background:var(--surface);border:1px solid var(--border2);border-radius:8px;width:100%;max-width:340px;padding:2rem;text-align:center;box-shadow:0 40px 80px rgba(0,0,0,0.95);}
+.pin-lock{font-size:2rem;margin-bottom:1rem;opacity:0.6;}
+.pin-title{font-size:0.95rem;font-weight:800;margin-bottom:0.3rem;}
+.pin-sub{font-size:0.75rem;color:var(--muted);margin-bottom:1.5rem;}
+.pin-input{background:var(--surface2);border:1px solid var(--border2);border-radius:5px;padding:0.7rem 1rem;color:#fff;font-size:1rem;outline:none;width:100%;text-align:center;letter-spacing:4px;font-family:monospace;transition:border-color 0.12s;margin-bottom:0.75rem;}
+.pin-input:focus{border-color:var(--accent);}
+.pin-input.shake{animation:shake 0.3s;}
+.pin-error{font-size:0.72rem;color:var(--red2);margin-bottom:0.75rem;min-height:16px;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* ── Empty ── */
+.empty{text-align:center;padding:2.5rem 1rem;color:var(--muted);}
+.empty .eicon{font-size:2rem;margin-bottom:0.6rem;opacity:0.5;}
+.empty h3{font-size:0.88rem;margin-bottom:0.3rem;color:#555;}
+.empty p{font-size:0.75rem;}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;padding:0.6rem 1rem;font-size:0.78rem;color:#ccc;box-shadow:0 8px 30px rgba(0,0,0,0.8);z-index:9999;transform:translateY(80px);opacity:0;transition:all 0.28s cubic-bezier(.34,1.56,.64,1);}
+.toast.show{transform:translateY(0);opacity:1;}
+
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+::-webkit-scrollbar-track{background:transparent;}
+
+@media(max-width:700px){
+  .sidebar{display:none;}
+  .form-grid,.settings-grid{grid-template-columns:1fr;}
+  .drawer{width:100%;}
+  .dg{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text">LuMe Studios</div>
+    <div class="logo-sub">CRM Dashboard</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">Main</div>
+    <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard"><span class="nav-icon">📊</span>Dashboard</div>
+    <div class="nav-item" onclick="showPage('clients')" id="nav-clients"><span class="nav-icon">💼</span>Clients</div>
+    <div class="nav-item" onclick="showPage('leads')" id="nav-leads"><span class="nav-icon">🎯</span>Leads</div>
+    <div class="nav-section">Finance</div>
+    <div class="nav-item" onclick="showPage('revenue')" id="nav-revenue"><span class="nav-icon">💰</span>Revenue</div>
+    <div class="nav-item" onclick="showPage('stats')" id="nav-stats"><span class="nav-icon">📈</span>Statistics</div>
+    <div class="nav-section">Settings</div>
+    <div class="nav-item" onclick="showPage('team')" id="nav-team"><span class="nav-icon">👥</span>Team</div>
+    <div class="nav-item" onclick="showPage('settings')" id="nav-settings"><span class="nav-icon">⚙️</span>Settings</div>
+  </nav>
+  <div class="sidebar-footer">
+    <span class="sync-dot" id="syncDot"></span>
+    <span id="syncLabel">Local only</span>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <span class="topbar-title" id="pageTitle">Dashboard</span>
+    <div class="topbar-right">
+      <button class="btn btn-primary" onclick="openAddModal()">+ Add Entry</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="stats-grid" id="dashStats"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;">
+      <div>
+        <div class="section-header"><span class="section-title">Recent Clients</span></div>
+        <div class="table-wrap" id="dashClients"></div>
+      </div>
+      <div>
+        <div class="section-header"><span class="section-title">Pipeline</span></div>
+        <div class="table-wrap" id="dashLeads"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLIENTS -->
+  <div class="page" id="page-clients">
+    <div class="section-header">
+      <span class="section-title">Clients & Projects</span>
+      <div class="section-actions">
+        <input type="text" class="filter-input" placeholder="Search..." oninput="renderClients(this.value)"/>
+        <button class="btn btn-primary btn-sm" onclick="openAddModal('active')">+ Add Client</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Client</th><th>Project</th><th>Total</th><th>Advance</th><th>Balance</th><th>Sale By</th><th>Commission</th><th>Status</th><th></th></tr></thead>
+        <tbody id="clientsTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- LEADS -->
+  <div class="page" id="page-leads">
+    <div class="section-header">
+      <span class="section-title">Leads Pipeline</span>
+      <div class="section-actions">
+        <button class="btn btn-primary btn-sm" onclick="openAddModal('lead')">+ Add Lead</button>
+      </div>
+    </div>
+    <div class="kanban" id="leadsKanban"></div>
+  </div>
+
+  <!-- REVENUE -->
+  <div class="page" id="page-revenue">
+    <div class="stats-grid" id="revenueStats"></div>
+    <div class="section-header"><span class="section-title">All Transactions</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Client</th><th>Project</th><th>Total</th><th>Advance</th><th>Balance</th><th>Sale By</th><th>Commission</th><th>Date</th><th></th></tr></thead>
+        <tbody id="revenueTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- STATISTICS -->
+  <div class="page" id="page-stats">
+    <div class="period-tabs">
+      <button class="period-tab active" onclick="setPeriod('day',this)">Daily</button>
+      <button class="period-tab" onclick="setPeriod('week',this)">Weekly</button>
+      <button class="period-tab" onclick="setPeriod('month',this)">Monthly</button>
+    </div>
+    <div class="stats-grid" id="periodStats"></div>
+    <div class="chart-card">
+      <div class="chart-title" id="chartTitle">Revenue — Last 30 Days</div>
+      <div class="chart-wrap"><canvas id="revenueChart"></canvas></div>
+    </div>
+    <div class="section-header"><span class="section-title">By Team Member</span></div>
+    <div class="person-grid" id="personGrid"></div>
+    <div class="section-header"><span class="section-title">Deals in Period</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Client</th><th>Project</th><th>Total</th><th>Sale By</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody id="statsDealsTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TEAM -->
+  <div class="page" id="page-team">
+    <div class="section-header">
+      <span class="section-title">Team Members</span>
+      <button class="btn btn-primary btn-sm" onclick="openTeamModal()">+ Add Member</button>
+    </div>
+    <div class="person-grid" id="teamCards"></div>
+    <div class="table-wrap" style="margin-top:1rem;">
+      <table>
+        <thead><tr><th>Name</th><th>Role</th><th>Deals</th><th>Total Sales</th><th>Commission</th><th></th></tr></thead>
+        <tbody id="teamTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="page" id="page-settings">
+    <div class="settings-section">
+      <div class="settings-title">☁️ Supabase Cloud Sync</div>
+      <div class="settings-desc">Connect Supabase to sync your data across all devices. Free tier is more than enough — no credit card required for setup.<br><br>
+      <strong>Status:</strong> <span id="supabaseStatus" class="status-chip off">Not connected</span></div>
+      <div class="settings-grid">
+        <div class="form-group">
+          <label class="form-label">Supabase Project URL</label>
+          <input class="form-input" id="sb_url" placeholder="https://xxxx.supabase.co"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Supabase Anon Key</label>
+          <input class="form-input" id="sb_key" type="password" placeholder="eyJhbGci..."/>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.65rem;margin-top:1rem;">
+        <button class="btn btn-primary" onclick="connectSupabase()">Connect & Sync</button>
+        <button class="btn btn-ghost" onclick="disconnectSupabase()">Disconnect</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">📋 Supabase Setup — Run this SQL once</div>
+      <div class="settings-desc">In your Supabase dashboard → SQL Editor, paste and run this to create the tables:</div>
+      <div class="code-block">create table if not exists lume_entries (
+  id text primary key,
+  client text not null,
+  phone text, email text, status text default 'lead',
+  project text, details text,
+  total numeric default 0, advance numeric default 0, compct numeric default 0,
+  saleby text, notes text,
+  created_at bigint, updated_at bigint
+);
+
+create table if not exists lume_team (
+  id text primary key,
+  name text not null, role text
+);
+
+-- Allow access with anon key (no auth needed)
+alter table lume_entries enable row level security;
+create policy "open" on lume_entries for all using (true) with check (true);
+alter table lume_team enable row level security;
+create policy "open" on lume_team for all using (true) with check (true);</div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">🗑️ Danger Zone</div>
+      <div class="settings-desc">Clear all local data. This cannot be undone.</div>
+      <button class="btn btn-danger" onclick="clearAllData()">Clear All Local Data</button>
+    </div>
+  </div>
+</main>
+
+<!-- Entry Modal -->
+<div class="modal-overlay" id="entryModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">Add Entry</span>
+      <button class="x-btn" onclick="closeModal('entryModal')">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Client Name *</label><input class="form-input" id="f_client" placeholder="e.g. Ravi's Bakery"/></div>
+      <div class="form-group"><label class="form-label">Phone / WhatsApp</label><input class="form-input" id="f_phone" placeholder="+91 98765 43210"/></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="f_email" placeholder="client@email.com"/></div>
+      <div class="form-group"><label class="form-label">Status *</label>
+        <select class="form-select" id="f_status">
+          <option value="lead">Lead</option>
+          <option value="negotiation">Negotiation</option>
+          <option value="active">Active</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div class="form-group full"><label class="form-label">Project Name</label><input class="form-input" id="f_project" placeholder="e.g. E-commerce website"/></div>
+      <div class="form-group full"><label class="form-label">What They Want / Project Details</label><textarea class="form-textarea" id="f_details" placeholder="Describe the project, pages, features, requirements..."></textarea></div>
+      <div class="form-divider">💰 Financial</div>
+      <div class="form-group"><label class="form-label">Total Value (₹)</label><input class="form-input" id="f_total" type="number" placeholder="0" oninput="updateComPreview()"/></div>
+      <div class="form-group"><label class="form-label">Advance Paid (₹)</label><input class="form-input" id="f_advance" type="number" placeholder="0"/></div>
+      <div class="form-divider">🤝 Sale Attribution</div>
+      <div class="form-group"><label class="form-label">Sale Made By</label>
+        <select class="form-select" id="f_saleby"><option value="">— Select —</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Commission %</label>
+        <input class="form-input" id="f_compct" type="number" placeholder="0" min="0" max="100" oninput="updateComPreview()"/>
+        <div class="com-preview" id="comPreview"></div>
+      </div>
+      <div class="form-divider">📝 Notes</div>
+      <div class="form-group full"><label class="form-label">Notes</label><textarea class="form-textarea" id="f_notes" placeholder="Follow-ups, client preferences, meeting notes..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('entryModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEntry()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Team Modal -->
+<div class="modal-overlay" id="teamModal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-header"><span class="modal-title">Add Team Member</span><button class="x-btn" onclick="closeModal('teamModal')">✕</button></div>
+    <div class="form-grid" style="grid-template-columns:1fr;">
+      <div class="form-group"><label class="form-label">Name *</label><input class="form-input" id="tm_name" placeholder="e.g. Sandeep"/></div>
+      <div class="form-group"><label class="form-label">Role</label><input class="form-input" id="tm_role" placeholder="e.g. Sales, Designer, Developer"/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('teamModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTeamMember()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Drawer -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="detailDrawer">
+  <div class="drawer-header">
+    <div><div class="drawer-name" id="drawerName"></div><div class="drawer-meta" id="drawerMeta"></div></div>
+    <button class="x-btn" onclick="closeDrawer()">✕</button>
+  </div>
+  <div id="drawerContent"></div>
+  <div class="drawer-actions" id="drawerActions"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Encryption (AES-GCM via Web Crypto) ─────────────────────────────
+const _EK = 'aXNmanNtdXVqd3hxY3dwYnhja3UtbHVtZS1jcm0tdjE='; // base64 key material
+
+async function _getCryptoKey() {
+  const raw = Uint8Array.from(atob(_EK), c => c.charCodeAt(0));
+  const km  = await crypto.subtle.importKey('raw', raw, 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name:'PBKDF2', salt: new TextEncoder().encode('lume-salt-v1'), iterations:100000, hash:'SHA-256' },
+    km, { name:'AES-GCM', length:256 }, false, ['encrypt','decrypt']
+  );
+}
+
+async function encStore(key, value) {
+  try {
+    const ck  = await _getCryptoKey();
+    const iv  = crypto.getRandomValues(new Uint8Array(12));
+    const enc = await crypto.subtle.encrypt({ name:'AES-GCM', iv }, ck, new TextEncoder().encode(JSON.stringify(value)));
+    const buf = new Uint8Array(12 + enc.byteLength);
+    buf.set(iv); buf.set(new Uint8Array(enc), 12);
+    localStorage.setItem('lume_enc_' + key, btoa(String.fromCharCode(...buf)));
+  } catch { localStorage.setItem('lume_fb_' + key, JSON.stringify(value)); }
+}
+
+async function decStore(key, fallback = []) {
+  try {
+    const raw = localStorage.getItem('lume_enc_' + key);
+    if (!raw) {
+      // try legacy unencrypted
+      const leg = localStorage.getItem('lume_' + key);
+      return leg ? JSON.parse(leg) : fallback;
+    }
+    const ck  = await _getCryptoKey();
+    const buf = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
+    const dec = await crypto.subtle.decrypt({ name:'AES-GCM', iv: buf.slice(0,12) }, ck, buf.slice(12));
+    return JSON.parse(new TextDecoder().decode(dec));
+  } catch {
+    const leg = localStorage.getItem('lume_' + key);
+    return leg ? JSON.parse(leg) : fallback;
+  }
+}
+
+// ── Supabase ────────────────────────────────────────────────────────
+// Anon key is public by design — protected by Row Level Security in Supabase
+const _SB_URL = 'https://isfjsmuujwxqcwpbxcku.supabase.co';
+const _SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzZmpzbXV1and4cWN3cGJ4Y2t1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NTc5NTcsImV4cCI6MjA5MDAzMzk1N30.JtsGquxfKXsdD4Z8Gy8whOfxjG1F7IFcg_eq3nNACtY';
+
+let sb = null;
+let sbConnected = false;
+
+async function initSupabase() {
+  try {
+    sb = supabase.createClient(_SB_URL, _SB_KEY);
+    const { error } = await sb.from('lume_team').select('id').limit(1);
+    if (error) throw error;
+    sbConnected = true;
+    updateSyncUI(true);
+    await pullFromSupabase();
+  } catch(e) {
+    sbConnected = false;
+    updateSyncUI(false);
+    console.warn('Supabase init failed, using local storage:', e.message);
+  }
+}
+
+async function connectSupabase() {
+  const url = document.getElementById('sb_url').value.trim();
+  const key = document.getElementById('sb_key').value.trim();
+  if (!url || !key) { toast('Enter both URL and key'); return; }
+  try {
+    sb = supabase.createClient(url, key);
+    const { error } = await sb.from('lume_team').select('id').limit(1);
+    if (error) throw error;
+    await encStore('sb_url', url);
+    await encStore('sb_key', key);
+    sbConnected = true;
+    updateSyncUI(true);
+    document.getElementById('supabaseStatus').className = 'status-chip ok';
+    document.getElementById('supabaseStatus').textContent = '✓ Connected';
+    toast('Connected! Syncing...');
+    await pushToSupabase();
+    await pullFromSupabase();
+    toast('Sync complete!');
+  } catch(e) {
+    document.getElementById('supabaseStatus').className = 'status-chip err';
+    document.getElementById('supabaseStatus').textContent = '✗ ' + (e.message||'Connection failed');
+    toast('Connection failed: ' + (e.message||'check URL and key'));
+  }
+}
+
+function disconnectSupabase() {
+  sb = null; sbConnected = false;
+  ['lume_enc_sb_url','lume_enc_sb_key'].forEach(k => localStorage.removeItem(k));
+  updateSyncUI(false);
+  document.getElementById('supabaseStatus').className = 'status-chip off';
+  document.getElementById('supabaseStatus').textContent = 'Not connected';
+  toast('Disconnected');
+}
+
+function updateSyncUI(connected) {
+  const dot = document.getElementById('syncDot');
+  const lbl = document.getElementById('syncLabel');
+  dot.className = 'sync-dot' + (connected ? ' connected' : '');
+  lbl.textContent = connected ? 'Cloud sync ON' : 'Local only';
+}
+
+async function pushToSupabase() {
+  if (!sb) return;
+  for (const e of entries) {
+    await sb.from('lume_entries').upsert(e);
+  }
+  for (const m of team) {
+    await sb.from('lume_team').upsert(m);
+  }
+}
+
+async function pullFromSupabase() {
+  if (!sb) return;
+  const { data: eData } = await sb.from('lume_entries').select('*');
+  const { data: tData } = await sb.from('lume_team').select('*');
+  if (eData && eData.length > 0) { entries = eData; }
+  if (tData && tData.length > 0) { team = tData; }
+  await saveLocal();
+}
+
+// ── Data ────────────────────────────────────────────────────────────
+let entries = [];
+let team    = [];
+let editingId = null;
+let currentPeriod = 'day';
+let revenueChartInst = null;
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+async function loadLocalData() {
+  entries = await decStore('entries', []);
+  team    = await decStore('team', []);
+  if (team.length === 0) {
+    team = [
+      { id: uid(), name: 'Sandeep', role: 'Sales' },
+      { id: uid(), name: 'Ansh',    role: 'Sales' },
+    ];
+    await encStore('team', team);
+  }
+}
+
+async function saveLocal() {
+  await encStore('entries', entries);
+  await encStore('team', team);
+  // remove any old unencrypted copies
+  localStorage.removeItem('lume_entries');
+  localStorage.removeItem('lume_team');
+}
+
+async function saveData() {
+  await saveLocal();
+  if (sbConnected && sb) await pushToSupabase();
+}
+
+// ── Navigation ──────────────────────────────────────────────────────
+const pageTitles = { dashboard:'Dashboard', clients:'Clients & Projects', leads:'Leads Pipeline', revenue:'Revenue', stats:'Statistics', team:'Team', settings:'Settings' };
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  document.getElementById('pageTitle').textContent = pageTitles[name];
+  const renders = { dashboard: renderDashboard, clients: renderClients, leads: renderLeads, revenue: renderRevenue, stats: renderStats, team: renderTeam, settings: renderSettings };
+  if (renders[name]) renders[name]();
+}
+
+// ── Toast ────────────────────────────────────────────────────────────
+function toast(msg, dur=2800) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), dur);
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────
+function fmt(n) { return '₹' + (Number(n)||0).toLocaleString('en-IN'); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+const SL = { lead:'Lead', negotiation:'Negotiation', active:'Active', completed:'Completed', cancelled:'Cancelled' };
+const SC = { lead:'badge-lead', negotiation:'badge-negotiation', active:'badge-active', completed:'badge-completed', cancelled:'badge-cancelled' };
+function sbadge(s) { return `<span class="badge ${SC[s]||'badge-lead'}">${SL[s]||s}</span>`; }
+function calcCom(e) { return (!e.compct||!e.total) ? 0 : Math.round((Number(e.total)||0)*(Number(e.compct)||0)/100); }
+function emptyRow(cols, msg) { return `<tr><td colspan="${cols}"><div class="empty"><div class="eicon">📭</div><h3>${msg}</h3></div></td></tr>`; }
+function emptyDiv(msg) { return `<div class="empty"><div class="eicon">📭</div><h3>${msg}</h3></div>`; }
+
+// ── Dashboard ────────────────────────────────────────────────────────
+function renderDashboard() {
+  const active = entries.filter(e => e.status==='active'||e.status==='completed');
+  const leads  = entries.filter(e => e.status==='lead'||e.status==='negotiation');
+  const totRev = active.reduce((s,e)=>s+(Number(e.total)||0),0);
+  const totAdv = active.reduce((s,e)=>s+(Number(e.advance)||0),0);
+  const totBal = totRev - totAdv;
+  const totCom = active.reduce((s,e)=>s+calcCom(e),0);
+
+  document.getElementById('dashStats').innerHTML = `
+    <div class="stat-card purple"><div class="stat-label">Total Revenue</div><div class="stat-value">${fmt(totRev)}</div><div class="stat-sub">${active.length} projects</div></div>
+    <div class="stat-card green"><div class="stat-label">Advances Collected</div><div class="stat-value">${fmt(totAdv)}</div><div class="stat-sub">${Math.round(totRev?totAdv/totRev*100:0)}% received</div></div>
+    <div class="stat-card yellow"><div class="stat-label">Balance Pending</div><div class="stat-value">${fmt(totBal)}</div><div class="stat-sub">Outstanding</div></div>
+    <div class="stat-card orange"><div class="stat-label">Commissions</div><div class="stat-value">${fmt(totCom)}</div><div class="stat-sub">${leads.length} leads in pipeline</div></div>
+  `;
+
+  const rec = [...entries].filter(e=>e.status!=='lead').sort((a,b)=>b.createdAt-a.createdAt).slice(0,5);
+  document.getElementById('dashClients').innerHTML = rec.length ? `
+    <table><thead><tr><th>Client</th><th>Value</th><th>Status</th></tr></thead><tbody>
+    ${rec.map(e=>`<tr onclick="openDrawer('${e.id}')"><td><div class="td-name">${esc(e.client)}</div><div class="td-sub">${esc(e.project||'')}</div></td><td class="td-amt">${fmt(e.total)}</td><td>${sbadge(e.status)}</td></tr>`).join('')}
+    </tbody></table>` : emptyDiv('No clients yet');
+
+  const rl = [...entries].filter(e=>e.status==='lead'||e.status==='negotiation').sort((a,b)=>b.createdAt-a.createdAt).slice(0,5);
+  document.getElementById('dashLeads').innerHTML = rl.length ? `
+    <table><thead><tr><th>Lead</th><th>Value</th><th>Status</th></tr></thead><tbody>
+    ${rl.map(e=>`<tr onclick="openDrawer('${e.id}')"><td><div class="td-name">${esc(e.client)}</div><div class="td-sub">${esc(e.project||'')}</div></td><td class="td-amt accent">${e.total?fmt(e.total):'TBD'}</td><td>${sbadge(e.status)}</td></tr>`).join('')}
+    </tbody></table>` : emptyDiv('No leads yet');
+}
+
+// ── Clients ──────────────────────────────────────────────────────────
+function renderClients(filter='') {
+  const q = filter.toLowerCase();
+  const list = entries.filter(e => e.status!=='lead')
+    .filter(e => !q || e.client.toLowerCase().includes(q) || (e.project||'').toLowerCase().includes(q))
+    .sort((a,b)=>b.createdAt-a.createdAt);
+  const tb = document.getElementById('clientsTable');
+  if (!list.length) { tb.innerHTML = emptyRow(9,'No clients found'); return; }
+  tb.innerHTML = list.map(e => {
+    const bal = (Number(e.total)||0)-(Number(e.advance)||0);
+    const com = calcCom(e);
+    return `<tr onclick="openDrawer('${e.id}')">
+      <td><div class="td-name">${esc(e.client)}</div><div class="td-sub">${esc(e.phone||'')}</div></td>
+      <td>${esc(e.project||'—')}</td>
+      <td class="td-amt">${fmt(e.total)}</td>
+      <td class="td-amt green">${fmt(e.advance)}</td>
+      <td class="td-amt ${bal>0?'yellow':''}">${fmt(bal)}</td>
+      <td>${esc(e.saleby||'—')}</td>
+      <td class="td-amt">${com?fmt(com):'—'}</td>
+      <td>${sbadge(e.status)}</td>
+      <td onclick="event.stopPropagation()" style="white-space:nowrap">
+        <button class="btn btn-ghost btn-sm btn-icon" onclick="openEditModal('${e.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteEntry('${e.id}')">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Leads ────────────────────────────────────────────────────────────
+function renderLeads() {
+  const cols = [
+    {key:'lead',label:'New Lead',color:'var(--accent3)'},
+    {key:'negotiation',label:'Negotiation',color:'var(--yellow)'},
+    {key:'active',label:'Active',color:'var(--green)'},
+    {key:'completed',label:'Completed',color:'#818cf8'},
+  ];
+  document.getElementById('leadsKanban').innerHTML = cols.map(col => {
+    const items = entries.filter(e=>e.status===col.key);
+    const cards = items.length ? items.map(e=>`
+      <div class="kcard" onclick="openDrawer('${e.id}')">
+        <div class="kcard-name">${esc(e.client)}</div>
+        <div class="kcard-sub">${esc(e.project||'No project name')}</div>
+        <div class="kcard-foot">
+          <span class="kcard-amt">${e.total?fmt(e.total):'TBD'}</span>
+          ${e.saleby?`<span style="font-size:0.7rem;color:var(--muted)">${esc(e.saleby)}</span>`:''}
+        </div>
+      </div>`).join('') : '<div style="padding:0.5rem 0;font-size:0.78rem;color:var(--muted2);text-align:center;">Empty</div>';
+    return `<div class="kcol">
+      <div class="kcol-head"><span class="kcol-title" style="color:${col.color}">${col.label}</span><span class="kcol-count">${items.length}</span></div>
+      <div class="kcards">${cards}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Revenue ──────────────────────────────────────────────────────────
+function renderRevenue() {
+  const cl = entries.filter(e=>e.status==='active'||e.status==='completed');
+  const totRev = cl.reduce((s,e)=>s+(Number(e.total)||0),0);
+  const totAdv = cl.reduce((s,e)=>s+(Number(e.advance)||0),0);
+  const totCom = cl.reduce((s,e)=>s+calcCom(e),0);
+  document.getElementById('revenueStats').innerHTML = `
+    <div class="stat-card purple"><div class="stat-label">Gross Revenue</div><div class="stat-value">${fmt(totRev)}</div></div>
+    <div class="stat-card green"><div class="stat-label">Received</div><div class="stat-value">${fmt(totAdv)}</div></div>
+    <div class="stat-card yellow"><div class="stat-label">Pending</div><div class="stat-value">${fmt(totRev-totAdv)}</div></div>
+    <div class="stat-card orange"><div class="stat-label">Commission Payable</div><div class="stat-value">${fmt(totCom)}</div></div>
+  `;
+  const tb = document.getElementById('revenueTable');
+  if (!cl.length) { tb.innerHTML = emptyRow(9,'No revenue entries yet'); return; }
+  tb.innerHTML = cl.sort((a,b)=>b.createdAt-a.createdAt).map(e=>{
+    const bal=(Number(e.total)||0)-(Number(e.advance)||0);
+    return `<tr onclick="openDrawer('${e.id}')">
+      <td class="td-name">${esc(e.client)}</td><td>${esc(e.project||'—')}</td>
+      <td class="td-amt">${fmt(e.total)}</td>
+      <td class="td-amt green">${fmt(e.advance)}</td>
+      <td class="td-amt ${bal>0?'yellow':''}">${fmt(bal)}</td>
+      <td>${esc(e.saleby||'—')}</td>
+      <td class="td-amt">${calcCom(e)?fmt(calcCom(e)):'—'}</td>
+      <td style="color:var(--muted);font-size:0.78rem">${new Date(e.createdAt).toLocaleDateString('en-IN')}</td>
+      <td onclick="event.stopPropagation()">
+        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteEntry('${e.id}')">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Statistics ───────────────────────────────────────────────────────
+function setPeriod(p, btn) {
+  currentPeriod = p;
+  document.querySelectorAll('.period-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  renderStats();
+}
+
+function renderStats() {
+  const now = new Date();
+  let labels=[], data=[], periodEntries=[], periodLabel='';
+
+  if (currentPeriod === 'day') {
+    periodLabel = 'Revenue — Last 30 Days';
+    for (let i=29;i>=0;i--) {
+      const d = new Date(now.getFullYear(),now.getMonth(),now.getDate()-i);
+      labels.push(d.toLocaleDateString('en-IN',{day:'numeric',month:'short'}));
+      const s=d.getTime(), e2=s+86400000;
+      data.push(entries.filter(e=>e.createdAt>=s&&e.createdAt<e2&&(e.status==='active'||e.status==='completed')).reduce((s2,e)=>s2+(Number(e.total)||0),0));
+    }
+    const todayStart = new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
+    periodEntries = entries.filter(e=>e.createdAt>=todayStart&&(e.status==='active'||e.status==='completed'));
+  } else if (currentPeriod === 'week') {
+    periodLabel = 'Revenue — Last 12 Weeks';
+    for (let i=11;i>=0;i--) {
+      const wStart = new Date(now); wStart.setDate(now.getDate()-i*7-now.getDay()); wStart.setHours(0,0,0,0);
+      const wEnd = new Date(wStart.getTime()+7*86400000);
+      labels.push(wStart.toLocaleDateString('en-IN',{day:'numeric',month:'short'}));
+      data.push(entries.filter(e=>e.createdAt>=wStart.getTime()&&e.createdAt<wEnd.getTime()&&(e.status==='active'||e.status==='completed')).reduce((s2,e)=>s2+(Number(e.total)||0),0));
+    }
+    const thisWkStart = new Date(now); thisWkStart.setDate(now.getDate()-now.getDay()); thisWkStart.setHours(0,0,0,0);
+    periodEntries = entries.filter(e=>e.createdAt>=thisWkStart.getTime()&&(e.status==='active'||e.status==='completed'));
+  } else {
+    periodLabel = 'Revenue — Last 12 Months';
+    for (let i=11;i>=0;i--) {
+      const mStart = new Date(now.getFullYear(),now.getMonth()-i,1);
+      const mEnd = new Date(now.getFullYear(),now.getMonth()-i+1,1);
+      labels.push(mStart.toLocaleDateString('en-IN',{month:'short',year:'2-digit'}));
+      data.push(entries.filter(e=>e.createdAt>=mStart.getTime()&&e.createdAt<mEnd.getTime()&&(e.status==='active'||e.status==='completed')).reduce((s2,e)=>s2+(Number(e.total)||0),0));
+    }
+    const thisMonStart = new Date(now.getFullYear(),now.getMonth(),1).getTime();
+    periodEntries = entries.filter(e=>e.createdAt>=thisMonStart&&(e.status==='active'||e.status==='completed'));
+  }
+
+  document.getElementById('chartTitle').textContent = periodLabel;
+
+  const periodRev = periodEntries.reduce((s,e)=>s+(Number(e.total)||0),0);
+  const periodAdv = periodEntries.reduce((s,e)=>s+(Number(e.advance)||0),0);
+  const periodCom = periodEntries.reduce((s,e)=>s+calcCom(e),0);
+  document.getElementById('periodStats').innerHTML = `
+    <div class="stat-card purple"><div class="stat-label">Period Revenue</div><div class="stat-value">${fmt(periodRev)}</div><div class="stat-sub">${periodEntries.length} deals</div></div>
+    <div class="stat-card green"><div class="stat-label">Period Advances</div><div class="stat-value">${fmt(periodAdv)}</div></div>
+    <div class="stat-card orange"><div class="stat-label">Period Commission</div><div class="stat-value">${fmt(periodCom)}</div></div>
+    <div class="stat-card blue"><div class="stat-label">Avg Deal Size</div><div class="stat-value">${fmt(periodEntries.length?Math.round(periodRev/periodEntries.length):0)}</div></div>
+  `;
+
+  // Chart
+  if (revenueChartInst) revenueChartInst.destroy();
+  const ctx = document.getElementById('revenueChart').getContext('2d');
+  revenueChartInst = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Revenue (₹)',
+        data,
+        backgroundColor: 'rgba(168,85,247,0.6)',
+        borderColor: 'rgba(168,85,247,1)',
+        borderWidth: 1,
+        borderRadius: 5,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' ₹' + ctx.raw.toLocaleString('en-IN') } } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8888aa', font: { size: 10 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8888aa', font: { size: 10 }, callback: v => '₹'+v.toLocaleString('en-IN') } }
+      }
+    }
+  });
+
+  // By person
+  document.getElementById('personGrid').innerHTML = team.map(m => {
+    const mDeals = periodEntries.filter(e=>e.saleby===m.name);
+    const mSales = mDeals.reduce((s,e)=>s+(Number(e.total)||0),0);
+    const mCom   = mDeals.reduce((s,e)=>s+calcCom(e),0);
+    return `<div class="person-card">
+      <div class="person-name">${esc(m.name)} <span style="font-size:0.7rem;color:var(--muted);font-weight:400">${esc(m.role||'')}</span></div>
+      <div class="person-stat"><span class="person-stat-label">Deals</span><span class="person-stat-val">${mDeals.length}</span></div>
+      <div class="person-stat"><span class="person-stat-label">Revenue</span><span class="person-stat-val accent">${fmt(mSales)}</span></div>
+      <div class="person-stat"><span class="person-stat-label">Commission</span><span class="person-stat-val green">${fmt(mCom)}</span></div>
+    </div>`;
+  }).join('') || '<div class="empty"><h3>No team members</h3></div>';
+
+  // Deals table
+  const tb = document.getElementById('statsDealsTable');
+  const allPeriodDeals = entries.filter(e => {
+    const startMs = currentPeriod==='day' ? new Date(now.getFullYear(),now.getMonth(),now.getDate()-29).getTime()
+      : currentPeriod==='week' ? (() => { const d=new Date(now); d.setDate(now.getDate()-11*7-now.getDay()); d.setHours(0,0,0,0); return d.getTime(); })()
+      : new Date(now.getFullYear(),now.getMonth()-11,1).getTime();
+    return e.createdAt >= startMs;
+  }).sort((a,b)=>b.createdAt-a.createdAt);
+  tb.innerHTML = allPeriodDeals.length ? allPeriodDeals.map(e=>`
+    <tr onclick="openDrawer('${e.id}')">
+      <td class="td-name">${esc(e.client)}</td>
+      <td>${esc(e.project||'—')}</td>
+      <td class="td-amt">${fmt(e.total)}</td>
+      <td>${esc(e.saleby||'—')}</td>
+      <td>${sbadge(e.status)}</td>
+      <td style="color:var(--muted);font-size:0.78rem">${new Date(e.createdAt).toLocaleDateString('en-IN')}</td>
+    </tr>`).join('') : emptyRow(6,'No deals in this period');
+}
+
+// ── Team ─────────────────────────────────────────────────────────────
+function renderTeam() {
+  const tb = document.getElementById('teamTable');
+  if (!team.length) { document.getElementById('teamCards').innerHTML=''; tb.innerHTML=emptyRow(6,'No team members yet'); return; }
+  document.getElementById('teamCards').innerHTML = team.map(m => {
+    const deals = entries.filter(e=>e.saleby===m.name&&(e.status==='active'||e.status==='completed'));
+    const sales = deals.reduce((s,e)=>s+(Number(e.total)||0),0);
+    const com   = deals.reduce((s,e)=>s+calcCom(e),0);
+    return `<div class="person-card">
+      <div class="person-name">${esc(m.name)} <span style="font-size:0.7rem;color:var(--muted);font-weight:400">${esc(m.role||'')}</span></div>
+      <div class="person-stat"><span class="person-stat-label">Deals Closed</span><span class="person-stat-val">${deals.length}</span></div>
+      <div class="person-stat"><span class="person-stat-label">Total Revenue</span><span class="person-stat-val accent">${fmt(sales)}</span></div>
+      <div class="person-stat"><span class="person-stat-label">Commission</span><span class="person-stat-val green">${fmt(com)}</span></div>
+    </div>`;
+  }).join('');
+  tb.innerHTML = team.map(m => {
+    const deals=entries.filter(e=>e.saleby===m.name&&(e.status==='active'||e.status==='completed'));
+    const sales=deals.reduce((s,e)=>s+(Number(e.total)||0),0);
+    const com=deals.reduce((s,e)=>s+calcCom(e),0);
+    return `<tr>
+      <td class="td-name">${esc(m.name)}</td><td style="color:var(--muted)">${esc(m.role||'—')}</td>
+      <td>${deals.length}</td><td class="td-amt">${fmt(sales)}</td><td class="td-amt green">${fmt(com)}</td>
+      <td onclick="event.stopPropagation()"><button class="btn btn-danger btn-sm btn-icon" onclick="deleteTeamMember('${m.id}')">🗑️</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function deleteTeamMember(id) {
+  if (!confirm('Remove this team member?')) return;
+  team = team.filter(m=>m.id!==id);
+  saveData();
+  renderTeam();
+  toast('Team member removed');
+}
+
+// ── Settings ─────────────────────────────────────────────────────────
+function renderSettings() {
+  const url = localStorage.getItem('lume_sb_url')||'';
+  const key = localStorage.getItem('lume_sb_key')||'';
+  document.getElementById('sb_url').value = url;
+  document.getElementById('sb_key').value = key;
+  const chip = document.getElementById('supabaseStatus');
+  if (sbConnected) { chip.className='status-chip ok'; chip.textContent='✓ Connected'; }
+  else { chip.className='status-chip off'; chip.textContent='Not connected'; }
+}
+
+function clearAllData() {
+  if (!confirm('Delete ALL local data? This cannot be undone.')) return;
+  entries=[]; team=[];
+  localStorage.removeItem('lume_entries');
+  localStorage.removeItem('lume_team');
+  toast('All data cleared');
+  renderDashboard();
+}
+
+// ── Add/Edit Modal ────────────────────────────────────────────────────
+function openAddModal(defaultStatus='lead') {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Add Entry';
+  clearForm();
+  document.getElementById('f_status').value = defaultStatus;
+  populateSaleBy('');
+  document.getElementById('entryModal').classList.add('open');
+}
+
+function openEditModal(id) {
+  const e = entries.find(x=>x.id===id);
+  if (!e) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'Edit Entry';
+  document.getElementById('f_client').value  = e.client||'';
+  document.getElementById('f_phone').value   = e.phone||'';
+  document.getElementById('f_email').value   = e.email||'';
+  document.getElementById('f_status').value  = e.status||'lead';
+  document.getElementById('f_project').value = e.project||'';
+  document.getElementById('f_details').value = e.details||'';
+  document.getElementById('f_total').value   = e.total||'';
+  document.getElementById('f_advance').value = e.advance||'';
+  document.getElementById('f_compct').value  = e.compct||'';
+  document.getElementById('f_notes').value   = e.notes||'';
+  populateSaleBy(e.saleby||'');
+  updateComPreview();
+  document.getElementById('entryModal').classList.add('open');
+}
+
+function clearForm() {
+  ['f_client','f_phone','f_email','f_project','f_details','f_total','f_advance','f_compct','f_notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('comPreview').style.display='none';
+}
+
+function populateSaleBy(selected='') {
+  document.getElementById('f_saleby').innerHTML = '<option value="">— Select —</option>' +
+    team.map(m=>`<option value="${esc(m.name)}" ${m.name===selected?'selected':''}>${esc(m.name)}</option>`).join('');
+}
+
+function updateComPreview() {
+  const t=Number(document.getElementById('f_total').value)||0;
+  const p=Number(document.getElementById('f_compct').value)||0;
+  const el=document.getElementById('comPreview');
+  if (t&&p) { el.textContent=`Commission = ${fmt(Math.round(t*p/100))}`; el.style.display='block'; }
+  else el.style.display='none';
+}
+
+async function saveEntry() {
+  const client = document.getElementById('f_client').value.trim();
+  if (!client) { toast('Client name is required'); return; }
+  const entry = {
+    id: editingId||uid(),
+    client,
+    phone:   document.getElementById('f_phone').value.trim(),
+    email:   document.getElementById('f_email').value.trim(),
+    status:  document.getElementById('f_status').value,
+    project: document.getElementById('f_project').value.trim(),
+    details: document.getElementById('f_details').value.trim(),
+    total:   Number(document.getElementById('f_total').value)||0,
+    advance: Number(document.getElementById('f_advance').value)||0,
+    compct:  Number(document.getElementById('f_compct').value)||0,
+    saleby:  document.getElementById('f_saleby').value,
+    notes:   document.getElementById('f_notes').value.trim(),
+    created_at: editingId?(entries.find(x=>x.id===editingId)?.created_at||Date.now()):Date.now(),
+    createdAt:  editingId?(entries.find(x=>x.id===editingId)?.createdAt||Date.now()):Date.now(),
+    updated_at: Date.now(), updatedAt: Date.now(),
+  };
+  if (editingId) { entries = entries.map(e=>e.id===editingId?entry:e); toast('Entry updated'); }
+  else { entries.unshift(entry); toast('Entry added'); }
+  await saveData();
+  closeModal('entryModal');
+  const activeNav = document.querySelector('.nav-item.active');
+  if (activeNav) { const m=activeNav.getAttribute('onclick')?.match(/'(\w+)'/); if(m) showPage(m[1]); }
+}
+
+// ── Team Modal ────────────────────────────────────────────────────────
+function openTeamModal() {
+  document.getElementById('tm_name').value='';
+  document.getElementById('tm_role').value='';
+  document.getElementById('teamModal').classList.add('open');
+}
+
+async function saveTeamMember() {
+  const name = document.getElementById('tm_name').value.trim();
+  if (!name) { toast('Name is required'); return; }
+  team.push({ id:uid(), name, role: document.getElementById('tm_role').value.trim() });
+  await saveData();
+  closeModal('teamModal');
+  renderTeam();
+  toast('Team member added');
+}
+
+// ── Drawer ────────────────────────────────────────────────────────────
+function openDrawer(id) {
+  const e = entries.find(x=>x.id===id);
+  if (!e) return;
+  const bal = (Number(e.total)||0)-(Number(e.advance)||0);
+  const com = calcCom(e);
+  const pct = e.total ? Math.round((Number(e.advance)||0)/Number(e.total)*100) : 0;
+  document.getElementById('drawerName').textContent = e.client;
+  document.getElementById('drawerMeta').innerHTML   = sbadge(e.status) + (e.project ? ` · ${esc(e.project)}` : '');
+  document.getElementById('drawerContent').innerHTML = `
+    <div class="dsec">
+      <div class="dsec-title">Project Details</div>
+      ${e.details?`<div class="d-notes">${esc(e.details)}</div>`:'<div style="color:var(--muted);font-size:0.82rem">No details added.</div>'}
+    </div>
+    <div class="dsec">
+      <div class="dsec-title">Financial</div>
+      <div class="dg">
+        <div class="di"><div class="di-label">Total Value</div><div class="di-val accent">${fmt(e.total)}</div></div>
+        <div class="di"><div class="di-label">Advance Paid</div><div class="di-val green">${fmt(e.advance)}</div></div>
+        <div class="di"><div class="di-label">Balance Due</div><div class="di-val ${bal>0?'yellow':''}">${fmt(bal)}</div></div>
+        <div class="di"><div class="di-label">Payment ${pct}%</div><div class="di-val">&nbsp;</div><div class="progress-wrap"><div class="progress-bar" style="width:${pct}%"></div></div></div>
+      </div>
+    </div>
+    <div class="dsec">
+      <div class="dsec-title">Sale Attribution</div>
+      <div class="dg">
+        <div class="di"><div class="di-label">Sale By</div><div class="di-val">${esc(e.saleby||'—')}</div></div>
+        <div class="di"><div class="di-label">Commission</div><div class="di-val green">${com?fmt(com)+` (${e.compct}%)`:'—'}</div></div>
+      </div>
+    </div>
+    <div class="dsec">
+      <div class="dsec-title">Contact</div>
+      <div class="dg">
+        <div class="di"><div class="di-label">Phone</div><div class="di-val">${esc(e.phone||'—')}</div></div>
+        <div class="di"><div class="di-label">Email</div><div class="di-val">${esc(e.email||'—')}</div></div>
+        <div class="di"><div class="di-label">Added</div><div class="di-val">${new Date(e.createdAt||e.created_at).toLocaleDateString('en-IN')}</div></div>
+      </div>
+    </div>
+    ${e.notes?`<div class="dsec"><div class="dsec-title">Notes</div><div class="d-notes">${esc(e.notes)}</div></div>`:''}
+  `;
+  document.getElementById('drawerActions').innerHTML = `
+    <button class="btn btn-primary" onclick="openEditModal('${e.id}');closeDrawer()">✏️ Edit</button>
+    <button class="btn btn-danger" onclick="deleteEntry('${e.id}')">🗑️ Delete</button>
+  `;
+  document.getElementById('drawerOverlay').classList.add('open');
+  document.getElementById('detailDrawer').classList.add('open');
+}
+
+function closeDrawer() {
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.getElementById('detailDrawer').classList.remove('open');
+}
+
+async function deleteEntry(id) {
+  if (!confirm('Delete this entry?')) return;
+  entries = entries.filter(e=>e.id!==id);
+  if (sbConnected && sb) await sb.from('lume_entries').delete().eq('id',id);
+  await saveLocal();
+  closeDrawer();
+  const activeNav = document.querySelector('.nav-item.active');
+  if (activeNav) { const m=activeNav.getAttribute('onclick')?.match(/'(\w+)'/); if(m) showPage(m[1]); }
+  toast('Entry deleted');
+}
+
+// ── Modal helpers ─────────────────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target===m) m.classList.remove('open'); });
+});
+
+// ── Init ──────────────────────────────────────────────────────────────
+(async () => {
+  await loadLocalData();
+  renderDashboard();
+  await initSupabase(); // connects + pulls latest from cloud
+  renderDashboard();    // re-render with cloud data
+})();
+</script>
+</body>
+</html>
